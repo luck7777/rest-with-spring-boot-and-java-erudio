@@ -6,7 +6,11 @@ import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.lucascaraujo.data.vo.v1.PersonVO;
+import com.lucascaraujo.data.vo.v2.PersonVOV2;
 import com.lucascaraujo.exceptions.ResourceNotFoundException;
+import com.lucascaraujo.mapper.MdMapper;
+import com.lucascaraujo.mapper.custom.PersonMapper;
 import com.lucascaraujo.model.Person;
 import com.lucascaraujo.repositories.PersonRepository;
 
@@ -18,47 +22,51 @@ public class PersonServices {
 	@Autowired
 	PersonRepository repository;
 	
-	public Person findById (Long id) {
-		
-		logger.info("Finding one person!");
-		
-		return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("No records found this ID!"));
+	@Autowired
+	PersonMapper mapper;
+	
+	public PersonVO findById (Long id) {		
+		logger.info("Finding one person!");		
+		var entity = repository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("No records found this ID!"));
+		return MdMapper.parseObject(entity, PersonVO.class);
 	}
 	
-	public List<Person> findAll () {
-		
-		logger.info("Finding all peaple!");
-		
-		return repository.findAll();
+	public List<PersonVO> findAll () {		
+		logger.info("Finding all peaple!");		
+		return MdMapper.parseListObjects(repository.findAll(), PersonVO.class);
 	}
 	
-	public Person create(Person person) {
-		
+	public PersonVO create(PersonVO person) {		
 		logger.info("Create one person!");
-		
-		return repository.save(person);
+		var entity = MdMapper.parseObject(person, Person.class);		
+		var vo = MdMapper.parseObject(repository.save(entity), PersonVO.class);
+		return vo;
 	}
 	
-	public Person update(Person person) {
-		
-		logger.info("Update one person!");
-		
-		Person entity = repository.findById(person.getId()).orElseThrow(() -> new ResourceNotFoundException("No records found this ID!"));
+	public PersonVOV2 createV2(PersonVOV2 person) {		
+		logger.info("Create one person V2!");
+		var entity = mapper.convertVoToEntity(person);		
+		var vo = mapper.convertEntityToVo(repository.save(entity));
+		return vo;
+	}
+	
+	public PersonVO update(PersonVO person) {		
+		logger.info("Update one person!");		
+		var entity = repository.findById(person.getId()).orElseThrow(() -> new ResourceNotFoundException("No records found this ID!"));
 		
 		entity.setNome(person.getNome());
 		entity.setSobrenome(person.getSobrenome());
 		entity.setEndereco(person.getEndereco());
 		entity.setGenero(person.getGenero());
 		
-		return repository.save(person);
+		var vo = MdMapper.parseObject(repository.save(entity), PersonVO.class);
+		return vo;
 	}
 	
-	public void delete(Long id) {
-		
-		logger.info("Deleting one person!");
-		
-		Person entity = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("No records found this ID!"));
-		
+	public void delete(Long id) {		
+		logger.info("Deleting one person!");		
+		var entity = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("No records found this ID!"));		
 		repository.delete(entity);
 	}
 }
